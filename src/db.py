@@ -27,17 +27,15 @@ class Database:
         return self._db
 
     async def setup(self) -> None:
-        logger.info("Starting database ...")
-
         self._db = await aiosqlite.connect(self._db_path)
         await self._db.execute(self._schema)
         self._db.row_factory = aiosqlite.Row
 
     async def close(self) -> None:
-        await self._db.close()
+        await self.db.close()
 
-    async def fetch_user(self, uid) -> dict[str, Any]:
-        cur = await self._db.execute("SELECT * FROM `users` WHERE uID = ?", uid)
+    async def fetch_user(self, user_id) -> dict[str, Any]:
+        cur = await self.db.execute("SELECT * FROM `users` WHERE user_id = ?", user_id)
         row = await cur.fetchone()
         return {
             "user_id": row[0],
@@ -49,22 +47,21 @@ class Database:
         }
 
     async def new_user(
-        self, uid, name: str, category: int, details: str, image: str
+        self, user_id: int, name: str, category: int, profile_details: str, profile_picture: str
     ) -> None:
-        regTime = datetime.now().timestamp()
+        reg_timestamp = datetime.now().timestamp()
 
-        await self._db.execute(
-            "INSERT INTO `users` (id, uID, name, category, details, image, regTime) VALUES (?,?,?,?,?,?)",
-            (uid, name, category, details, image, regTime),
+        await self.db.execute(
+            "INSERT INTO `users` (user_id, name, category, profile_details, profile_picture, reg_timestamp) VALUES (?,?,?,?,?,?)",
+            (user_id, name, category, profile_details, profile_picture, reg_timestamp),
         )
-        await self._db.commit()
-        logger.info("user commited %s;%s;%s;%s" % (uid, name, details, image))
+        await self.db.commit()
 
-    async def edit_user(self, uid, new_details: str) -> None:
-        await self._db.execute(
-            "UPDATE `users` SET details = ? WHERE uid = ? ", (new_details, uid)
+    async def edit_user(self, user_id: int, new_details: str) -> None:
+        await self.db.execute(
+            "UPDATE `users` SET profile_details = ? WHERE user_id = ? ", (new_details, user_id)
         )
-        await self._db.commit()
+        await self.db.commit()
 
 
 db = Database()
