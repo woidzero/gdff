@@ -1,87 +1,119 @@
-from datetime import datetime
-import logging
-from typing import Any
-import aiosqlite
+from typing import Tuple, Any, Optional
 
+import logging
+
+from config import Config
+
+from datetime import datetime
+
+import aiosqlite
 import asyncio
 
 logger = logging.getLogger("db")
+logger.setLevel(logging.DEBUG)
 
 
 class Database:
-    def __init__(self, db_path: str = "gdff/users.sqlite3") -> None:
-        self._db_path = db_path
-        self._db = None
-        self._schema = """
-        CREATE TABLE IF NOT EXISTS users (
-            user_id INT UNIQUE PRIMARY KEY, 
-            name TEXT NOT NULL,
-            category INT /* 1-talk; 2-host; 3-creator; 4-slayer; */,
-            profile_details VARCHAR(1000),
-            profile_picture TEXT,
-            reg_timestamp BIGINT
-        );"""
+    def __init__(self) -> None:
+        self.conn: Optional[aiosqlite.Connection] = None
+
+    async def connect(self) -> None:
+        try:
+            self.conn = await aiosqlite.connect(Config.DB_FILE)
+        except aiosqlite.Error:
+            pass
 
     @property
-    def db(self) -> aiosqlite.Connection | None:
-        return self._db
+    def is_connected(self) -> bool:
+        return self.conn is not None
 
-    async def setup(self) -> None:
-        self._db = await aiosqlite.connect(self._db_path)
-        await self._db.execute(self._schema)
-        self._db.row_factory = aiosqlite.Row
+    @staticmethod
+    async def _fetch(cursor, mode="one") -> Optional[Any]:
+        if mode == "one":
+            return await cursor.fetchone()
+        if mode == "many":
+            return await cursor.fetchmany()
+        if mode == "all":
+            return await cursor.fetchall()
 
-    async def close(self) -> None:
-        await self.db.close()
+        return None
 
-    async def fetch_user(self, user_id) -> dict[str, Any]:
-        cur = await self.db.execute("SELECT * FROM `users` WHERE user_id = ?", user_id)
-        row = await cur.fetchone()
-        return {
-            "user_id": row[0],
-            "name": row[1],
-            "category": row[2],
-            "profile_details": row[3],
-            "profile_picture": row[4],
-            "reg_timestamp": row[5],
-        }
+    async def execute(
+        self, query: str, values: Tuple = (), *, fetch: str = "one"
+    ) -> Optional[Any]:
+        cursor = await self.conn.cursor()
 
-    async def new_user(
-        self, user_id: int, name: str, category: int, profile_details: str, profile_picture: str
-    ) -> None:
-        reg_timestamp = datetime.now().timestamp()
+        await cursor.execute(query, values)
+        data = await self._fetch(cursor, fetch)
+        await self.conn.commit()
 
-        await self.db.execute(
-            "INSERT INTO `users` (user_id, name, category, profile_details, profile_picture, reg_timestamp) VALUES (?,?,?,?,?,?)",
-            (user_id, name, category, profile_details, profile_picture, reg_timestamp),
-        )
-        await self.db.commit()
-
-    async def edit_user(self, user_id: int, new_details: str) -> None:
-        await self.db.execute(
-            "UPDATE `users` SET profile_details = ? WHERE user_id = ? ", (new_details, user_id)
-        )
-        await self.db.commit()
+        await cursor.close()
+        return data
 
 
-db = Database()
+DB = Database()
 
 
-async def test():
-    print("setup")
-    await db.setup()
-    print(1)
-    await db.new_user(1, "woidzero", 1, "kransiy svet", "none")
-    print(1)
+async def create_db() -> None:
+    await DB.execute(
+        """CREATE TABLE IF NOT EXISTS users (
+            userID INT UNIQUE PRIMARY KEY, 
+            fullName TEXT,
+            category INT /* 1-talk; 2-host; 3-creator; 4-slayer; */,
+            userDetails VARCHAR(1000),
+            userPicture TEXT,
+            regTime BIGINT
+        );"""
+    )
+    logger.info("db created")
+
+async def new_user(
+    user_id: int,
+    full_name: str,
+    category: int,
+    user_details: str,
+    user_picture: str,
+    reg_time: float = datetime.now().timestamp()
+) -> None:
+    await DB.execute(
+        "INSERT INTO users (userID, fullName, category, userDetails, userPicture, regTime) VALUES (?,?,?,?,?,?)",
+        (user_id, full_name, category, user_details, user_picture, reg_time),
+    )
+
+async def get_user(user_id: int) -> dict[str, Any]:
+    row = await DB.execute("SELECT * FROM users WHERE userID = ?", (user_id,), fetch="one")
+    return {
+        "user_id": row[0],
+        "full_name": row[1],
+        "category": row[2],
+        "user_details": row[3],
+        "user_picture": row[4],
+        "reg_time": row[5],
+    }
 
 
-async def test1():
-    user = await db.fetch_user(1)
+async def edit_user(user_id: int, key: str, value: str) -> None:
+    await DB.execute(
+        "UPDATE users SET ? = ? WHERE userID = ?",
+        (key, value, user_id),
+    )
+
+
+# test suite
+# 
+async def test() -> None:
+    await DB.connect()
+    
+    if not DB.is_connected:
+        raise logger.error("Database isn't connected")
+    
+    await create_db()
+    logger.info("Database created")
+    
+    await new_user(1, "woidzero", 1, "kransiy svet", "none")
+    print("user created")
+    user = await get_user(1)
     print(user)
 
 
-try:
-    asyncio.run(test1())
-except Exception:
-    asyncio.run(test())
-    asyncio.run(test1())
+asyncio.run(test())
