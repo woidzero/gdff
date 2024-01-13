@@ -1,11 +1,13 @@
 from os import getenv
-from dotenv import load_dotenv, find_dotenv
+
+from dotenv import find_dotenv, load_dotenv
 
 load_dotenv(find_dotenv())
 
+
 class Config:
     TOKEN = getenv("TOKEN")
-    
+
     DB_FILE = getenv("DB_FILE")
     DB_HOST = getenv("DB_HOST")
     DB_NAME = getenv("DB_NAME")
