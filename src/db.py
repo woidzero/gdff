@@ -1,13 +1,11 @@
-from typing import Tuple, Any, Optional
-
+import asyncio
+import contextlib
 import logging
-
-from config import Config
-
 from datetime import datetime
+from typing import Any, Optional, Tuple
 
 import aiosqlite
-import asyncio
+from config import Config
 
 logger = logging.getLogger("db")
 logger.setLevel(logging.DEBUG)
@@ -18,10 +16,8 @@ class Database:
         self.conn: Optional[aiosqlite.Connection] = None
 
     async def connect(self) -> None:
-        try:
+        with contextlib.suppress(aiosqlite.Error):
             self.conn = await aiosqlite.connect(Config.DB_FILE)
-        except aiosqlite.Error:
-            pass
 
     @property
     def is_connected(self) -> bool:
@@ -38,9 +34,7 @@ class Database:
 
         return None
 
-    async def execute(
-        self, query: str, values: Tuple = (), *, fetch: str = "one"
-    ) -> Optional[Any]:
+    async def execute(self, query: str, values: Tuple = (), *, fetch: str = "one") -> Optional[Any]:
         cursor = await self.conn.cursor()
 
         await cursor.execute(query, values)
@@ -51,13 +45,13 @@ class Database:
         return data
 
 
-DB = Database()
+DB: Database = Database()
 
 
 async def create_db() -> None:
     await DB.execute(
         """CREATE TABLE IF NOT EXISTS users (
-            userID INT UNIQUE PRIMARY KEY, 
+            userID INT UNIQUE PRIMARY KEY,
             fullName TEXT,
             category INT /* 1-talk; 2-host; 3-creator; 4-slayer; */,
             userDetails VARCHAR(1000),
@@ -67,18 +61,20 @@ async def create_db() -> None:
     )
     logger.info("db created")
 
+
 async def new_user(
     user_id: int,
     full_name: str,
     category: int,
     user_details: str,
     user_picture: str,
-    reg_time: float = datetime.now().timestamp()
+    reg_time: float = datetime.now().timestamp(),
 ) -> None:
     await DB.execute(
         "INSERT INTO users (userID, fullName, category, userDetails, userPicture, regTime) VALUES (?,?,?,?,?,?)",
         (user_id, full_name, category, user_details, user_picture, reg_time),
     )
+
 
 async def get_user(user_id: int) -> dict[str, Any]:
     row = await DB.execute("SELECT * FROM users WHERE userID = ?", (user_id,), fetch="one")
@@ -100,20 +96,28 @@ async def edit_user(user_id: int, key: str, value: str) -> None:
 
 
 # test suite
-# 
+#
 async def test() -> None:
     await DB.connect()
-    
+
     if not DB.is_connected:
         raise logger.error("Database isn't connected")
-    
+
     await create_db()
     logger.info("Database created")
-    
+
     await new_user(1, "woidzero", 1, "kransiy svet", "none")
     print("user created")
     user = await get_user(1)
     print(user)
 
 
-asyncio.run(test())
+if __name__ == "__main__":
+    asyncio.run(test())
+
+# todo: remove public variables
+asyncio.run(DB.connect())
+if not DB.is_connected:
+    raise logger.error("Database isn't connected")
+
+asyncio.run(create_db())

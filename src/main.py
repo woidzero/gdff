@@ -1,53 +1,49 @@
+import asyncio
+import logging
 import os
+import sys
 
-import telebot
-from telebot import types
-from telebot.async_telebot import AsyncTeleBot
-
-from db import Database
+from aiogram import Bot, Dispatcher, types
+from aiogram.enums import ParseMode
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.types import Message
 from config import Config
+from keyboards import common_keyboard
+from PIL import Image
 from utils import create_form
 
-from PIL import Image
+from src import fsm, handlers
+from src.fsm import category_keyboard_buttons
 
+dp = Dispatcher(storage=MemoryStorage())
 
-bot = AsyncTeleBot(Config.TOKEN)
+dp.include_router(fsm.router)
+dp.include_router(handlers.router)
 
 user_ids = {}
 
 
-@bot.message_handler(commands=["help", "start"])
-def welcome(message) -> None:
-    user_ids.update({message.chat.id: 0})
-
-    view_forms_btn = types.KeyboardButton("👥 Посмотреть анкеты")
-    create_form = types.KeyboardButton("📝 Моя анкета")
-    info_btn = types.KeyboardButton("📍 Информация")
-
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(create_form, view_forms_btn, info_btn)
-
-    bot.reply_to(
-        message, "Добро пожаловать! Пора создать анкету.", reply_markup=keyboard
-    )
+main_keyboard_buttons = [
+    "👥 Посмотреть анкеты",
+    "📝 Моя анкета",
+    "📍 Информация",
+]
 
 
-@bot.message_handler(content_types=["text"])
-def handle_message(message) -> None:
-    if message.text == "Создать анкету":
-        talking = types.KeyboardButton("Общение")
-        creator = types.KeyboardButton("Креатор")
-        slayer = types.KeyboardButton("Слеер")
-        host = types.KeyboardButton("Хост")
 
-        start_btn = types.KeyboardButton("Вернутся")
-
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(talking, creator, slayer, host, start_btn)
-
-        bot.reply_to(message, "Кто вы?", reply_markup=keyboard)
-    elif message.text == "Общение":
-        create_form(message, 1, "Расскажи о себе.")
+# @dp.message_handler(content_types=["text"])
+# @dp.message(lambda message: message.text in main_keyboard_buttons + list(category_keyboard_buttons.values()))
+def handle_message(message: Message) -> None:
+    text = message.text
+    if text == main_keyboard_buttons[2]:
+        category_keyboard = common_keyboard(*category_keyboard_buttons)
+        message.answer("Кем вы являтесь и кого хотите найти?", reply_markup=category_keyboard)
+    elif text in category_keyboard_buttons:
+        message.answer("Расскажи о себе.")
+        create_form(
+            message,
+            1,
+        )
     elif message.text == "Креатор":
         create_form(message, 2, "Расскажи о себе.")
     elif message.text == "Слеер":
@@ -58,8 +54,8 @@ def handle_message(message) -> None:
         view_form(message)
     elif message.text == "Удалить анкету":
         remove_form(message)
-    elif message.text == "🔙 К началу":
-        welcome(message)
+    # elif message.text == "🔙 К началу":
+    #     welcome(message)
     elif message.text == "🔴 Скип":
         user_ids[message.chat.id] += 2
         try:
@@ -80,7 +76,7 @@ def process_description_step(message):
         if len(message.text) < 1000:
             user_file.write(message.text)
         else:
-            bot.reply_to(message, "Слишком длинное сообщение!")
+            message.reply("Слишком длинное сообщение!")
             return
 
         blocked_names = [
@@ -91,13 +87,11 @@ def process_description_step(message):
         ]
 
         if message.text not in blocked_names:
-            bot.reply_to(
-                message, "Анкета успешно создана! Вот как ее будут видеть остальные:"
-            )
+            message.reply("Анкета успешно создана! Вот как ее будут видеть остальные:")
         else:
             user_file.close()
             os.remove(path)
-            welcome(message)
+            # welcome(message)
 
             return
 
@@ -107,16 +101,16 @@ def process_description_step(message):
 {message.text}
 		"""
 
-        try:
-            photos = bot.get_user_profile_photos(message.from_user.id)
-            bot.send_photo(message.chat.id, photos.photos[0][2].file_id)
+        # try:
+        # photos = bot.get_user_profile_photos(message.from_user.id)
+        # bot.send_photo(message.chat.id, photos.photos[0][2].file_id)
 
-            with open(path + ".png", "wb") as avatar:
-                file_info = bot.get_file(photos.photos[0][2].file_id)
-                downloaded_file = bot.download_file(file_info.file_path)
-                avatar.write(downloaded_file)
-        except:
-            pass
+        #     with open(path + ".png", "wb") as avatar:
+        #         file_info = bot.get_file(photos.photos[0][2].file_id)
+        #         downloaded_file = bot.download_file(file_info.file_path)
+        #         avatar.write(downloaded_file)
+        # except:
+        #     pass
 
         view_forms_btn = types.KeyboardButton(text="Просмотреть анкеты")
 
@@ -140,7 +134,7 @@ def send_form(message, folder):
 
     with open(user, "r", encoding="utf-8") as user_file:
         data = user_file.read().split(":")
-        form = f"""
+        f"""
 @{data[0]}
 
 {data[1]}
@@ -149,11 +143,11 @@ def send_form(message, folder):
     try:
         avatar = Image.open(user + ".png")
         avatar = avatar.resize((128, 128))
-        bot.send_photo(message.chat.id, avatar)
+        # bot.send_photo(message.chat.id, avatar)
     except:
         pass
 
-    bot.send_message(message.chat.id, form, reply_markup=keyboard)
+    # bot.send_message(message.chat.id, form, reply_markup=keyboard)
     return
 
 
@@ -162,9 +156,9 @@ def remove_form(message):
         path = find_user_path(message.from_user.username)
         os.remove(path[0])
 
-        bot.reply_to(message, "Вы успешно удалили вашу анкету!")
+        message.reply("Вы успешно удалили вашу анкету!")
     except:
-        bot.reply_to(message, "У вас не создана анкета!")
+        message.reply("У вас не создана анкета!")
         return
 
 
@@ -172,7 +166,7 @@ def view_form(message):
     try:
         path = find_user_path(message.from_user.username)[0]
     except:
-        bot.reply_to(message, "У вас не создана анкета!")
+        message.reply("У вас не создана анкета!")
         return
 
     if "hostsgp" in path:
@@ -194,9 +188,7 @@ def find_user_path(name):
             if ".png" in user:
                 continue
 
-            with open(
-                f"users/{user_folder}/{user}", "r", encoding="utf-8"
-            ) as user_file:
+            with open(f"users/{user_folder}/{user}", "r", encoding="utf-8") as user_file:
                 data = user_file.read().split(":")
                 if data[0] == name:
                     users.append(f"users/{user_folder}/{user}")
@@ -204,5 +196,11 @@ def find_user_path(name):
     return users
 
 
+async def main() -> None:
+    bot = Bot(Config.TOKEN, parse_mode=ParseMode.HTML)
+    await dp.start_polling(bot)
+
+
 if __name__ == "__main__":
-    bot.infinity_polling()
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    asyncio.run(main())
