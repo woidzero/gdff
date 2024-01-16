@@ -5,8 +5,9 @@ from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, ReplyKeyboardRemove
-from db import get_user, new_user
+from db import get_user
 
+from src.database.methods import create_user_profile
 from src.keyboards import common_keyboard
 
 category_kb_classification = {
@@ -63,18 +64,12 @@ async def category_chosen_incorrectly(message: Message):
 @router.message(Registration.writing_profile_description)
 async def description_filled(message: Message, state: FSMContext):
     user_data = await state.get_data()
-    try:
-        user = await get_user(message.from_user.id)
-        if user.get("reg_time"):
-            await message.answer("Анкета не перезаписанна", reply_markup=ReplyKeyboardRemove())
-            # todo: edit user profile
-    except:
-        await new_user(
-            full_name=message.from_user.full_name,
-            category=category_to_id[user_data["chosen_category"]],
-            user_details=message.text,
-            user_id=message.from_user.id,
-            user_picture="",
-        )
-        await message.answer("Вы успешно зарегистрированы!", reply_markup=ReplyKeyboardRemove())
+    category = category_to_id[user_data["chosen_category"]]
+    description = message.text
+    if len(description) > 1000:
+        await message.answer(f"Анкета не должна быть длинее 1000 символов.\n\nТекущая длина: {len(description)}")
+        await state.set_state(Registration.writing_profile_description)
+        return
+    await create_user_profile(user_id=message.from_user.id, category=category, description=description)
+    await message.answer("Вы успешно зарегистрированы!", reply_markup=ReplyKeyboardRemove())
     await state.clear()

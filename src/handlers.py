@@ -4,6 +4,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import Message, ReplyKeyboardRemove
 
+from src.database.methods import create_user
+
 router = Router()
 
 
@@ -12,9 +14,10 @@ async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
         text=f"{message.from_user.first_name}, Добро пожаловать в ГМД ДАЙВИНЧИК!"
-             "Зарегистрируйтесь с помощью /register",
+        "Зарегистрируйтесь с помощью /register",
         reply_markup=ReplyKeyboardRemove(),
     )
+    await create_user(message.from_user.id, name=message.from_user.full_name)
 
 
 # Нетрудно догадаться, что следующие два хэндлера можно

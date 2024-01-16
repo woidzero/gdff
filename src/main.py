@@ -13,6 +13,7 @@ from PIL import Image
 from utils import create_form
 
 from src import fsm, handlers
+from src.database.base import register_models
 from src.fsm import category_keyboard_buttons
 
 dp = Dispatcher(storage=MemoryStorage())
@@ -22,13 +23,11 @@ dp.include_router(handlers.router)
 
 user_ids = {}
 
-
 main_keyboard_buttons = [
     "👥 Посмотреть анкеты",
     "📝 Моя анкета",
     "📍 Информация",
 ]
-
 
 
 # @dp.message_handler(content_types=["text"])
@@ -196,8 +195,13 @@ def find_user_path(name):
     return users
 
 
+async def on_startup() -> None:
+    await register_models()
+
+
 async def main() -> None:
     bot = Bot(Config.TOKEN, parse_mode=ParseMode.HTML)
+    dp.startup.register(on_startup)
     await dp.start_polling(bot)
 
 

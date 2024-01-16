@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Any, Optional, Tuple
 
 import aiosqlite
-from config import Config
 
 logger = logging.getLogger("db")
 logger.setLevel(logging.DEBUG)
@@ -17,7 +16,7 @@ class Database:
 
     async def connect(self) -> None:
         with contextlib.suppress(aiosqlite.Error):
-            self.conn = await aiosqlite.connect(Config.DB_FILE)
+            self.conn = await aiosqlite.connect("junk.sqlite3")
 
     @property
     def is_connected(self) -> bool:
