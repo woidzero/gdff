@@ -1,31 +1,14 @@
 import aiogram
-from aiogram import F
-from aiogram.dispatcher.router import Router
+from aiogram import F, Router
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, ReplyKeyboardRemove
-from db import get_user
 
-from src.database.methods import create_user_profile
-from src.keyboards import common_keyboard
+from bot.database.methods import create_user_profile
+from bot.keyboards.main import category_keyboard, category_keyboard_buttons, category_to_id
 
-category_kb_classification = {
-    "talking": "Общение",
-    "slayer": "Слеер",
-    "host": "Хост",
-    "creator_gp": "Креатор (ГП)",
-    "creator_deco": "Креатор (Деко)",
-    "go_back": "Вернутся",
-}
-
-category_to_id = {category: id for id, category in enumerate(category_kb_classification.values(), 1)}
-
-category_keyboard_buttons = list(category_kb_classification.values())
-
-category_keyboard = common_keyboard(*category_keyboard_buttons, row_width=3)
-
-router = Router()
+router: Router = Router(name=__name__)
 
 
 class Registration(StatesGroup):
@@ -35,14 +18,6 @@ class Registration(StatesGroup):
 
 @router.message(StateFilter(None), Command("register"))
 async def cmd_register(message: Message, state: FSMContext):
-    try:
-        user = await get_user(message.from_user.id)
-        if user.get("reg_time"):
-            await message.answer("Вы уже зарегистрированы. Ваша прошлая анкета будет перезаписанна.")
-            # todo: ask for profile deletion
-    except:
-        pass
-
     await message.answer(text="Кем вы являтесь и кого хотите найти?", reply_markup=category_keyboard)
     await state.set_state(Registration.choosing_category)
 

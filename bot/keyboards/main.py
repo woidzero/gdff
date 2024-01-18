@@ -25,3 +25,21 @@ def common_keyboard(
         input_field_placeholder=input_field_placeholder,
         selective=selective,
     )
+
+
+main_keyboard_buttons = [
+    "👥 Посмотреть анкеты",
+    "📝 Моя анкета",
+    "📍 Информация",
+]
+category_kb_classification = {
+    "talking": "Общение",
+    "slayer": "Слеер",
+    "host": "Хост",
+    "creator_gp": "Креатор (ГП)",
+    "creator_deco": "Креатор (Деко)",
+    "go_back": "Вернутся",
+}
+category_to_id = {category: id for id, category in enumerate(category_kb_classification.values(), 1)}
+category_keyboard_buttons = list(category_kb_classification.values())
+category_keyboard = common_keyboard(*category_keyboard_buttons, row_width=3)

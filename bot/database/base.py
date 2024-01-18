@@ -5,7 +5,7 @@ from sqlalchemy import BigInteger, Integer
 from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, registry
 
-from src.config import Config
+from bot.config import Config
 
 from .util import SingletonMeta
 

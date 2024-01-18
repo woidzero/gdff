@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import Message, ReplyKeyboardRemove
 
-from src.database.methods import create_user
+from bot.database.methods import create_user
 
 router = Router()
 
@@ -13,14 +13,13 @@ router = Router()
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
-        text=f"{message.from_user.first_name}, Добро пожаловать в ГМД ДАЙВИНЧИК!"
-        "Зарегистрируйтесь с помощью /register",
+        text=f"{message.from_user.first_name}, Добро пожаловать в GMD DVN!\n\nЗарегистрируйтесь с помощью /register",
         reply_markup=ReplyKeyboardRemove(),
     )
     await create_user(message.from_user.id, name=message.from_user.full_name)
 
 
-# Нетрудно догадаться, что следующие два хэндлера можно
+# Нетрудно догадаться, что следующие два хэндлера можно объединить в один
 
 
 @router.message(StateFilter(None), Command(commands=["cancel"]))
