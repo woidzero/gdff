@@ -6,7 +6,7 @@ load_dotenv(find_dotenv())
 
 
 class Config:
-    TOKEN = getenv("TOKEN")
+    TOKEN = str(getenv("TOKEN"))
 
     DB_FILE = getenv("DB_FILE")
     DB_HOST = getenv("DB_HOST")

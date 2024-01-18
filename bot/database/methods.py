@@ -16,7 +16,7 @@ async def create_user(user_id: Int64, name: str) -> None:
             logger.info(f"Created new user: {name} <{user_id}>")
 
 
-async def create_user_profile(user_id: int, category: Int16, description: str):
+async def create_user_profile(user_id: int, category: Int16, description: str) -> None:
     async with Database().session as session:
         await session.execute(
             update(User)

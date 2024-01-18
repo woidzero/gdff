@@ -40,6 +40,8 @@ category_kb_classification = {
     "creator_deco": "Креатор (Деко)",
     "go_back": "Вернутся",
 }
-category_to_id = {category: id for id, category in enumerate(category_kb_classification.values(), 1)}
+category_to_id = {
+    category: id for id, category in enumerate(category_kb_classification.values(), 1)
+}
 category_keyboard_buttons = list(category_kb_classification.values())
 category_keyboard = common_keyboard(*category_keyboard_buttons, row_width=3)

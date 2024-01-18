@@ -1,13 +1,14 @@
 from datetime import datetime
+from typing import Any, Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column
 
 
 class SingletonMeta(type):
-    _instance = None
+    _instance: Optional["SingletonMeta"] = None
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(cls, *args: Any, **kwargs: Any) -> Optional["SingletonMeta"]:
         if cls._instance:
             return cls._instance
         cls._instance = super(SingletonMeta, cls).__call__(*args, **kwargs)

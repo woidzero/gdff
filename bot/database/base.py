@@ -2,7 +2,13 @@ import asyncio
 from typing import Annotated, TypeAlias
 
 from sqlalchemy import BigInteger, Integer
-from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncAttrs,
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.orm import DeclarativeBase, registry
 
 from bot.config import Config
@@ -20,7 +26,7 @@ class Base(AsyncAttrs, DeclarativeBase):
 class Database(metaclass=SingletonMeta):
     BASE = Base
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._engine: AsyncEngine = create_async_engine(f"sqlite+aiosqlite:///{Config.DB_FILE}")
         session = async_sessionmaker(bind=self._engine, expire_on_commit=False)
         self._session: AsyncSession = session()
