@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase, registry
 
-from bot.config import Config
+from bot.settings import Settings
 
 from .util import SingletonMeta
 
@@ -27,7 +27,7 @@ class Database(metaclass=SingletonMeta):
     BASE = Base
 
     def __init__(self) -> None:
-        self._engine: AsyncEngine = create_async_engine(f"sqlite+aiosqlite:///{Config.DB_FILE}")
+        self._engine: AsyncEngine = create_async_engine(url=Settings().build_sqlite_url())
         session = async_sessionmaker(bind=self._engine, expire_on_commit=False)
         self._session: AsyncSession = session()
 

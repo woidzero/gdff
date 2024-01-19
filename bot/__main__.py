@@ -8,8 +8,8 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 import bot.handlers.other as other_handlers
 from bot import states
-from bot.config import Config
 from bot.database.base import register_models
+from bot.settings import Settings
 
 logger = logging.getLogger(name=__name__)
 
@@ -21,7 +21,9 @@ async def _on_startup() -> None:
 
 
 async def main() -> None:
-    bot = Bot(Config.TOKEN, parse_mode=ParseMode.HTML)
+    settings = Settings()
+
+    bot = Bot(settings.bot_token.get_secret_value(), parse_mode=ParseMode.HTML)
 
     dp = Dispatcher(storage=MemoryStorage())
 
@@ -29,6 +31,11 @@ async def main() -> None:
     dp.include_router(other_handlers.router)
 
     dp.startup.register(_on_startup)
+
+    await bot.delete_webhook(drop_pending_updates=settings.drop_pending_updates)
+    if settings.drop_pending_updates:
+        logger.info("Updates skipped successfully")
+
     await dp.start_polling(bot)
 
 
