@@ -1,47 +1,40 @@
-from typing import Optional
+from dataclasses import dataclass
 
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
-from aiogram.utils.keyboard import ReplyKeyboardBuilder
+from .base import common_keyboard
 
 
-def common_keyboard(
-    *texts: str,
-    is_persistent: Optional[bool] = None,
-    resize_keyboard: bool = True,
-    one_time_keyboard: Optional[bool] = None,
-    input_field_placeholder: Optional[str] = None,
-    selective: Optional[bool] = None,
-    row_width: int = 2,
-) -> ReplyKeyboardMarkup:
-    """
-    Common reply keyboards build helper.
-    """
-    builder: ReplyKeyboardBuilder = ReplyKeyboardBuilder()
-    builder.row(*[KeyboardButton(text=text) for text in texts], width=row_width)
-    return builder.as_markup(
-        is_persistent=is_persistent,
-        resize_keyboard=resize_keyboard,
-        one_time_keyboard=one_time_keyboard,
-        input_field_placeholder=input_field_placeholder,
-        selective=selective,
+@dataclass
+class KbButtons:
+    go_back = "Вернутся"
+
+    main = {
+        "👥 Посмотреть анкеты": "check_surveys",
+        "📝 Моя анкета": "my_servey",
+        "📍 Информация": "information",
+    }
+
+    category_select = {
+        "Общение": "talking",
+        "Слеер": "slayer",
+        "Хост": "host",
+        "Креатор (ГП)": "creator_gp",
+        "Креатор (Деко)": "creator_deco",
+    }
+    category_to_id = {
+        "talking": 1,
+        "slayer": 2,
+        "host": 3,
+        "creator_gp": 4,
+        "creator_deco": 5,
+    }
+
+
+@dataclass
+class ReplyKb:
+    main = common_keyboard(*KbButtons.main.keys())
+
+    category_select = common_keyboard(
+        *KbButtons.category_select.keys(),
+        KbButtons.go_back,
+        row_width=3,
     )
-
-
-main_keyboard_buttons = [
-    "👥 Посмотреть анкеты",
-    "📝 Моя анкета",
-    "📍 Информация",
-]
-category_kb_classification = {
-    "talking": "Общение",
-    "slayer": "Слеер",
-    "host": "Хост",
-    "creator_gp": "Креатор (ГП)",
-    "creator_deco": "Креатор (Деко)",
-    "go_back": "Вернутся",
-}
-category_to_id = {
-    category: id for id, category in enumerate(category_kb_classification.values(), 1)
-}
-category_keyboard_buttons = list(category_kb_classification.values())
-category_keyboard = common_keyboard(*category_keyboard_buttons, row_width=3)
