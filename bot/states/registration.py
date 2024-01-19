@@ -53,7 +53,7 @@ async def description_filled(message: Message, state: FSMContext) -> None:
         await state.set_state(Registration.writing_profile_description)
         return
     await create_user_profile(
-        user_id=message.from_user.id, category=category, description=description
+        user_id=message.from_user.id, category=category, description=description  # type: ignore
     )
     await message.answer("Вы успешно зарегистрированы!", reply_markup=ReplyKeyboardRemove())
     await state.clear()

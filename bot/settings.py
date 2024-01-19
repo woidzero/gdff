@@ -3,6 +3,8 @@ from pathlib import Path
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from bot.utils import PathControl
+
 
 class Settings(BaseSettings):
     bot_token: SecretStr
@@ -11,7 +13,7 @@ class Settings(BaseSettings):
 
     sqlite_db_file: Path
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=PathControl.get(".env"), env_file_encoding="utf-8")
 
     def build_sqlite_url(self) -> str:
-        return f"sqlite+aiosqlite:///{self.sqlite_db_file}"
+        return f"sqlite+aiosqlite:///{PathControl.get(self.sqlite_db_file)}"
