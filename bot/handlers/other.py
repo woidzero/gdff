@@ -5,7 +5,7 @@ from aiogram.fsm.state import default_state
 from aiogram.types import Message, ReplyKeyboardRemove
 
 from bot.database.methods import create_user
-from bot.keyboards import ReplyKb, KbButtons
+from bot.keyboards import KbButtons, ReplyKb
 
 router = Router()
 

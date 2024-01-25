@@ -1,25 +1,34 @@
-import logging
-
 import aiogram
 from aiogram import F, Router
-from aiogram.filters import Command, StateFilter, CommandObject
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.fsm.state import State, StatesGroup, default_state
+from aiogram.types import Message
 
 from bot.database.methods import create_user_profile
 from bot.keyboards import KbButtons, ReplyKb
+from bot.keyboards.base import common_keyboard
 
 router: Router = Router(name=__name__)
 
 
 class Registration(StatesGroup):
+    name = State()
     choosing_category = State()
     writing_profile_description = State()
 
 
-@router.message(StateFilter(None), Command("register"))
+@router.message(default_state, Command("register"))
 async def cmd_register(message: Message, state: FSMContext) -> None:
+    await message.answer(
+        text="Введите своё имя", reply_markup=common_keyboard(message.from_user.full_name)
+    )
+    await state.set_state(Registration.name)
+
+
+@router.message(Registration.name)
+async def state_category(message: Message, state: FSMContext) -> None:
+    await state.update_data(name=message.text)
     await message.answer(
         text="Кем вы являтесь и кого хотите найти?", reply_markup=ReplyKb.category_select
     )
@@ -58,16 +67,9 @@ async def description_filled(message: Message, state: FSMContext) -> None:
 
     user_data = await state.get_data()
     category_id = user_data.get("category_id")
+    name = user_data.get("name")
     await create_user_profile(
-        user_id=message.from_user.id, category_id=category_id, description=description
+        user_id=message.from_user.id, name=name, category_id=category_id, description=description
     )
     await message.answer("Вы успешно зарегистрированы!", reply_markup=ReplyKb.main)
     await state.clear()
-
-
-@router.message(Command("ln"))
-async def link_profile_command(message: Message, command: CommandObject):
-    user_id = command.args
-    link = f"tg://user?id={user_id}"
-    from aiogram import html
-    await message.reply(f"link: {html.link(value=message.from_user.full_name, link=link)}")
