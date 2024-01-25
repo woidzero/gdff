@@ -7,6 +7,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
 import bot.handlers.other as other_handlers
+import bot.handlers.user as user_handlers
 from bot import states
 from bot.database.base import register_models
 from bot.settings import Settings
@@ -29,6 +30,7 @@ async def main() -> None:
 
     dp.include_router(states.router)
     dp.include_router(other_handlers.router)
+    dp.include_router(user_handlers.router)
 
     dp.startup.register(_on_startup)
 
@@ -36,7 +38,7 @@ async def main() -> None:
     if settings.drop_pending_updates:
         logger.info("Updates skipped successfully")
 
-    await dp.start_polling(bot)
+    await dp.start_polling(bot, settings=settings)
 
 
 if __name__ == "__main__":

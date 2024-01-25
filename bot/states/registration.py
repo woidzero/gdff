@@ -1,6 +1,8 @@
+import logging
+
 import aiogram
 from aiogram import F, Router
-from aiogram.filters import Command, StateFilter
+from aiogram.filters import Command, StateFilter, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, ReplyKeyboardRemove
@@ -24,9 +26,12 @@ async def cmd_register(message: Message, state: FSMContext) -> None:
     await state.set_state(Registration.choosing_category)
 
 
-@router.message(Registration.choosing_category, F.text.in_(KbButtons.category_select.keys()))
+@router.message(Registration.choosing_category, F.text.in_(KbButtons.category_select.values()))
 async def category_chosen(message: Message, state: FSMContext) -> None:
-    await state.update_data(chosen_category=KbButtons.category_select[str(message.text)])
+    category = KbButtons.category_select.get_key(str(message.text))
+    category_id = KbButtons.category_to_id.get_value(category)
+    await state.update_data(category_id=category_id)
+
     await message.answer(
         text="Теперь, пожалуйста, расскажите о себе:",
         reply_markup=aiogram.types.ReplyKeyboardRemove(),
@@ -43,8 +48,6 @@ async def category_chosen_incorrectly(message: Message) -> None:
 
 @router.message(Registration.writing_profile_description)
 async def description_filled(message: Message, state: FSMContext) -> None:
-    user_data = await state.get_data()
-    category = KbButtons.category_to_id[user_data["chosen_category"]]
     description = str(message.text)
     if len(description) > 1000:
         await message.answer(
@@ -52,8 +55,19 @@ async def description_filled(message: Message, state: FSMContext) -> None:
         )
         await state.set_state(Registration.writing_profile_description)
         return
+
+    user_data = await state.get_data()
+    category_id = user_data.get("category_id")
     await create_user_profile(
-        user_id=message.from_user.id, category=category, description=description  # type: ignore
+        user_id=message.from_user.id, category_id=category_id, description=description
     )
-    await message.answer("Вы успешно зарегистрированы!", reply_markup=ReplyKeyboardRemove())
+    await message.answer("Вы успешно зарегистрированы!", reply_markup=ReplyKb.main)
     await state.clear()
+
+
+@router.message(Command("ln"))
+async def link_profile_command(message: Message, command: CommandObject):
+    user_id = command.args
+    link = f"tg://user?id={user_id}"
+    from aiogram import html
+    await message.reply(f"link: {html.link(value=message.from_user.full_name, link=link)}")

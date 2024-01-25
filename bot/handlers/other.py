@@ -5,17 +5,21 @@ from aiogram.fsm.state import default_state
 from aiogram.types import Message, ReplyKeyboardRemove
 
 from bot.database.methods import create_user
+from bot.keyboards import ReplyKb, KbButtons
 
 router = Router()
 
 
+@router.message(F.text == KbButtons.main["information"])
 @router.message(Command(commands=["start"]))
 async def cmd_start(message: Message, state: FSMContext) -> None:
     await state.clear()
     await message.answer(
         text=f"{message.from_user.first_name}, Добро пожаловать в GMD DVN!\n\n"
-        "Зарегистрируйтесь с помощью /register",
-        reply_markup=ReplyKeyboardRemove(),
+        "Зарегистрируйтесь с помощью /register\n"
+        "Просмотреть свою анкету: /my_profile\n"
+        "Посмотреть случайный профиль: /random_profile",
+        reply_markup=ReplyKb.main,
     )
     await create_user(message.from_user.id, name=message.from_user.full_name)
 
