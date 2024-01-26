@@ -6,6 +6,7 @@ from .base import BidirectionalDict, common_keyboard
 @dataclass
 class KbButtons:
     go_back = "Вернутся"
+    register = "Зарегистрироваться"
 
     main = BidirectionalDict(
         {
@@ -34,6 +35,13 @@ class KbButtons:
         }
     )
 
+    confirmation = BidirectionalDict(
+        {
+            "yes": "✅ Да",
+            "no": "❌ Нет",
+        }
+    )
+
 
 @dataclass
 class ReplyKb:
@@ -44,3 +52,10 @@ class ReplyKb:
         KbButtons.go_back,
         row_width=3,
     )
+
+    register = common_keyboard(KbButtons.register)
+
+
+@dataclass
+class InlineKb:
+    confirmation = common_keyboard(*KbButtons.confirmation.values())

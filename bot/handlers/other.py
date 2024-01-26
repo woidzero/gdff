@@ -4,8 +4,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import Message, ReplyKeyboardRemove
 
-from bot.database.methods import create_user
+from bot.database.methods import create_user, is_registered_user
 from bot.keyboards import KbButtons, ReplyKb
+from bot.states.registration import cmd_register
 
 router = Router()
 
@@ -17,11 +18,17 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
     await message.answer(
         text=f"{message.from_user.first_name}, Добро пожаловать в GMD DVN!\n\n"
         "Зарегистрируйтесь с помощью /register\n"
+        "Удалить анкету: /unregister\n"
         "Просмотреть свою анкету: /my_profile\n"
         "Посмотреть случайный профиль: /random_profile",
         reply_markup=ReplyKb.main,
     )
     await create_user(message.from_user.id, name=message.from_user.full_name)
+
+    is_registered = await is_registered_user(message.from_user.id)
+    if not is_registered:
+        await message.answer("Перед использованием бота необходимо пройти регистрацию")
+        await cmd_register(message, state)
 
 
 # Нетрудно догадаться, что следующие два хэндлера можно объединить в один

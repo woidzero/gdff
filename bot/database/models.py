@@ -18,6 +18,7 @@ class User(Base, TimestampMixin):
     category: Mapped[Int16] = mapped_column(nullable=True)
     description: Mapped[str] = mapped_column(String(length=1000), nullable=True)
     locale: Mapped[str] = mapped_column(String(length=2), default=Locale.DEFAULT)
+    is_registered: Mapped[bool] = mapped_column(default=False)
 
     @property
     def url(self) -> str:

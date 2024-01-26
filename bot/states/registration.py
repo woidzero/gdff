@@ -18,6 +18,10 @@ class Registration(StatesGroup):
     writing_profile_description = State()
 
 
+class Unregistration(StatesGroup):
+    confirmation = State()
+
+
 @router.message(default_state, Command("register"))
 async def cmd_register(message: Message, state: FSMContext) -> None:
     await message.answer(

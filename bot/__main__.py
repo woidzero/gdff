@@ -28,8 +28,8 @@ async def main() -> None:
 
     dp = Dispatcher(storage=MemoryStorage())
 
+    dp.include_router(other_handlers.router)  # must be first router to include
     dp.include_router(states.router)
-    dp.include_router(other_handlers.router)
     dp.include_router(user_handlers.router)
 
     dp.startup.register(_on_startup)
