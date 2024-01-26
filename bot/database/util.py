@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from sqlalchemy import func
@@ -18,7 +18,7 @@ class SingletonMeta(type):
 class TimestampMixin:
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
-        default=func.now(),
+        default=datetime.now(timezone.utc),
         onupdate=func.now(),
         server_default=func.now(),
     )
