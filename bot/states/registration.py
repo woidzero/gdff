@@ -6,8 +6,9 @@ from aiogram.fsm.state import State, StatesGroup, default_state
 from aiogram.types import Message
 
 from bot.database.methods import create_user_profile
-from bot.keyboards import KbButtons, ReplyKb
+
 from bot.keyboards.base import common_keyboard
+from bot.keyboards.main import CategorySelectButtons, MainMenuButtons
 
 router: Router = Router(name=__name__)
 
@@ -34,15 +35,14 @@ async def cmd_register(message: Message, state: FSMContext) -> None:
 async def state_category(message: Message, state: FSMContext) -> None:
     await state.update_data(name=message.text)
     await message.answer(
-        text="Кем вы являтесь и кого хотите найти?", reply_markup=ReplyKb.category_select
+        text="Кем вы являтесь и кого хотите найти?", reply_markup=CategorySelectButtons.markup()
     )
     await state.set_state(Registration.choosing_category)
 
 
-@router.message(Registration.choosing_category, F.text.in_(KbButtons.category_select.values()))
+@router.message(Registration.choosing_category, F.text.in_(CategorySelectButtons.get_buttons()))
 async def category_chosen(message: Message, state: FSMContext) -> None:
-    category = KbButtons.category_select.get_key(str(message.text))
-    category_id = KbButtons.category_to_id.get_value(category)
+    category_id = CategorySelectButtons.get_id_by_name(message.text)
     await state.update_data(category_id=category_id)
 
     await message.answer(
@@ -55,7 +55,8 @@ async def category_chosen(message: Message, state: FSMContext) -> None:
 @router.message(Registration.choosing_category)
 async def category_chosen_incorrectly(message: Message) -> None:
     await message.answer(
-        text="Пожалуйста, выберите категорию из списка ниже:", reply_markup=ReplyKb.category_select
+        text="Пожалуйста, выберите категорию из списка ниже:",
+        reply_markup=CategorySelectButtons.markup(),
     )
 
 
@@ -75,5 +76,5 @@ async def description_filled(message: Message, state: FSMContext) -> None:
     await create_user_profile(
         user_id=message.from_user.id, name=name, category_id=category_id, description=description
     )
-    await message.answer("Вы успешно зарегистрированы!", reply_markup=ReplyKb.main)
+    await message.answer("Вы успешно зарегистрированы!", reply_markup=MainMenuButtons.markup())
     await state.clear()
